@@ -1,6 +1,7 @@
 from lxml import etree
-from StringIO import StringIO
 from dateutil import parser
+from icalendar import Calendar, Event
+import time
 
 #f = StringIO('<html><a>bbb</a></html>')
 xmlParser = etree.XMLParser(ns_clean=True, remove_blank_text=True)
@@ -9,6 +10,10 @@ tree = etree.parse('agenda.xhtml', xmlParser)
 #print etree.tostring(tree.getroot())
 parent = '//table/tbody/tr/td[last()]/'
 r = tree.xpath(parent + 'span | '+ parent + 'div')
+
+cal = Calendar()
+cal.add('prodid', '-//My calendar product//mxm.dk//')
+cal.add('version', '2.0')
 
 mod = 0
 for el in r:
@@ -19,7 +24,10 @@ for el in r:
             #reset event specific variables
             mod = 0
             dayLong = False
-            if len(el.text) < 15:
+            event = Event()
+
+            #prevent that Lines like "Sabato" are parsed correctly
+            if len(el.text) < 15: 
                 continue
             date = dateTmp
             dateText = el.text
@@ -56,14 +64,34 @@ for el in r:
                     
                     dateEnd = date.replace(hour = timeEnd.hour, minute = timeEnd.minute)
                     print dateEnd
-
+                    event.add('dtstart', dateStart)
+                    event.add('dtstamp', dateStart) #maybe it's better to use NOW()
+                    event.add('dtend', dateEnd)
+                    
+                    #TODO: use UID to avoid duplication importing in the calendar manager
+                    #print 'UID'
+                    #event['uid'] = time.mktime(dateStart.timetuple())
+                    #print event['uid']
+                    
                 except:
                     mod += 1
                     dayLong = True
             if mod == 1:
+                event.add('summary', el.text)
                 print "Titolo: %s" %el.text
             if mod == 2:
+                event.add('description', el.text)
+                event.add('priority', 5)
+
+                if dayLong:
+                    event.add('dtstart;value=date', "%d%d%d" % (date.year, date.month, date.day))
+
+                cal.add_component(event)
                 print "Descrizione: %s" %el.text
             mod += 1
-            #print "%s\nA\nA\n" % el.text
+
+
+f = open('abitarelaterra.ics', 'wb')
+f.write(cal.as_string())
+f.close()
 
