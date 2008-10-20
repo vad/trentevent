@@ -3,12 +3,11 @@ from dateutil import parser
 from icalendar import Calendar, Event
 import time
 
-#f = StringIO('<html><a>bbb</a></html>')
 xmlParser = etree.XMLParser(ns_clean=True, remove_blank_text=True)
 tree = etree.parse('agenda.xhtml', xmlParser)
 
 #print etree.tostring(tree.getroot())
-parent = '//table/tbody/tr/td[last()]/'
+parent = '//table/tbody/tr[last()]/td/'
 r = tree.xpath(parent + 'span | '+ parent + 'div')
 
 cal = Calendar()
@@ -35,9 +34,8 @@ for el in r:
             print "DATA:"
             print date
         except:
-            if mod == 0:
+            if mod == 0: ## hour
                 hourText = el.text.replace('.', ':')
-                print "Ora: %s" % el.text
                 count = hourText.count(':')
                 
                 #if exceptions have been raised, maybe it's not an hour (DAYLONG event)
@@ -48,7 +46,6 @@ for el in r:
                     timeStart = parser.parse(textStartHour)
                     
                     dateStart = date.replace(hour = timeStart.hour, minute = timeStart.minute)
-                    print dateStart
 
                     #if there are more hours, then they are start and end time
                     if count == 2:
@@ -63,10 +60,11 @@ for el in r:
                         timeEnd = timeStart + relativedelta(hours = 2)
                     
                     dateEnd = date.replace(hour = timeEnd.hour, minute = timeEnd.minute)
-                    print dateEnd
+                    
                     event.add('dtstart', dateStart)
                     event.add('dtstamp', dateStart) #maybe it's better to use NOW()
                     event.add('dtend', dateEnd)
+                    event.add('location', el.tail)
                     
                     #TODO: use UID to avoid duplication importing in the calendar manager
                     #print 'UID'
