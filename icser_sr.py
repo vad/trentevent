@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from BeautifulSoup import BeautifulSoup
 #from dateutil import parser
 from icalendar import Calendar, Event
