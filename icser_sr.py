@@ -43,6 +43,7 @@ def decode_htmlentities(string):
 ## END DECODE HTML ENTITIES
 
 def get_events(doc):
+    from hashlib import md5
     ap = doc.find('td', {"class": "main"}).findAll('p')
 
     events = []
@@ -58,17 +59,24 @@ def get_events(doc):
         
         event = Event()
     
-        date = p.split(' ')[0].split('/')
-        desc = ' '.join(p.split(' ')[1:])
-        #event.add('dtstart', dateStart)
-        #event.add('dtstamp', dateStart) #maybe it's better to use NOW()
-        #event.add('dtend', dateEnd)
-        event.add('location', LOCATION)
-        event.add('dtstart;value=date', "%s%.2d%.2d" % (int(year),
-            int(date[1]),int(date[0])))
-        event.add('summary', desc)
-        events.append(event)
-
+        try:
+            date = p.split(' ')[0].split('/')
+            desc = ' '.join(p.split(' ')[1:])
+            #event.add('dtstart', dateStart)
+            #event.add('dtstamp', dateStart) #maybe it's better to use NOW()
+            #event.add('dtend', dateEnd)
+            event.add('location', LOCATION)
+            event.add('dtstart;value=date', "%s%.2d%.2d" % (int(year),
+                int(date[1]),int(date[0])))
+            event.add('summary', desc)
+            
+            #TODO: add other info like the date!!
+            md5text = desc
+            
+            event['uid'] = md5(md5text).hexdigest()+'@supercinemarovereto.it'
+            events.append(event)
+        except:
+            continue
     return events
     
 
