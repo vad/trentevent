@@ -39,18 +39,10 @@ def decode_htmlentities(string):
 
 ## END DECODE HTML ENTITIES
 
-def main():
-    f = urlopen("http://www.supercinemarovereto.it/rassegne.php")
-    #f = open("rassegne.php")
-    doc = BeautifulSoup(''.join(f.readlines()))
-    f.close()
-    
+def get_events(doc):
     ap = doc.find('td', {"class": "main"}).findAll('p')
-    
-    cal = Calendar()
-    #cal.add('prodid', '-//My calendar product//mxm.dk//')
-    cal.add('version', '2.0')
-    
+
+    events = []
     
     year = 0
     for p in ap:
@@ -72,6 +64,24 @@ def main():
         event.add('dtstart;value=date', "%s%.2d%.2d" % (int(year),
             int(date[1]),int(date[0])))
         event.add('summary', desc)
+        events.append(event)
+
+    return events
+    
+
+def main():
+    f = urlopen("http://www.supercinemarovereto.it/rassegne.php")
+    #f = open("rassegne.php")
+    page = ''.join(f.readlines())
+    doc = BeautifulSoup(page)
+    f.close()
+    
+    events = get_events(doc)
+    
+    cal = Calendar()
+    #cal.add('prodid', '-//My calendar product//mxm.dk//')
+    cal.add('version', '2.0')
+    for event in events:
         cal.add_component(event)
     
     f = open('scr.ics', 'wb')
