@@ -27,6 +27,13 @@ def substitute_entity(match):
             return match.group()
 
 def decode_htmlentities(string):
+    """    
+    >>> decode_htmlentities('&#38;')
+    u'&'
+    >>> decode_htmlentities('abc')
+    'abc'
+    """
+
     entity_re = re.compile("&(#?)(\d{1,5}|\w{1,8});")
     return entity_re.subn(substitute_entity, string)[0]
 
