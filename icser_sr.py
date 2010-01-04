@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+import sys
+sys.path.append("icalendar-1.2-py2.5.egg")
+
 from BeautifulSoup import BeautifulSoup
 #from dateutil import parser
 from icalendar import Calendar, Event
@@ -29,39 +32,44 @@ def decode_htmlentities(string):
 
 ## END DECODE HTML ENTITIES
 
-file = urlopen("http://www.supercinemarovereto.it/rassegne.php")
-doc = BeautifulSoup(''.join(file.readlines()))
-
-ap = doc.find('td', {"class": "main"}).findAll('p')
-
-cal = Calendar()
-cal.add('prodid', '-//My calendar product//mxm.dk//')
-cal.add('version', '2.0')
-
-
-year = 0
-for p in ap:
-    p = decode_htmlentities(p.string).strip()
-    if not p: continue
-
-    if not year:
-        year = p.split(' ')[-1]
-        continue
+def main():
+    f = urlopen("http://www.supercinemarovereto.it/rassegne.php")
+    #f = open("rassegne.php")
+    doc = BeautifulSoup(''.join(f.readlines()))
+    f.close()
     
-    event = Event()
+    ap = doc.find('td', {"class": "main"}).findAll('p')
+    
+    cal = Calendar()
+    #cal.add('prodid', '-//My calendar product//mxm.dk//')
+    cal.add('version', '2.0')
+    
+    
+    year = 0
+    for p in ap:
+        p = decode_htmlentities(p.string).strip()
+        if not p: continue
+    
+        if not year:
+            year = p.split(' ')[-1]
+            continue
+        
+        event = Event()
+    
+        date = p.split(' ')[0].split('/')
+        desc = ' '.join(p.split(' ')[1:])
+        #event.add('dtstart', dateStart)
+        #event.add('dtstamp', dateStart) #maybe it's better to use NOW()
+        #event.add('dtend', dateEnd)
+        event.add('location', LOCATION)
+        event.add('dtstart;value=date', "%s%.2d%.2d" % (int(year),
+            int(date[1]),int(date[0])))
+        event.add('summary', desc)
+        cal.add_component(event)
+    
+    f = open('scr.ics', 'wb')
+    f.write(cal.as_string())
+    f.close()
 
-    date = p.split(' ')[0].split('/')
-    desc = ' '.join(p.split(' ')[1:])
-    #event.add('dtstart', dateStart)
-    #event.add('dtstamp', dateStart) #maybe it's better to use NOW()
-    #event.add('dtend', dateEnd)
-    event.add('location', LOCATION)
-    event.add('dtstart;value=date', "%s%.2d%.2d" % (int(year),
-        int(date[1]),int(date[0])))
-    event.add('summary', desc)
-    cal.add_component(event)
-
-f = open('scr.ics', 'wb')
-f.write(cal.as_string())
-f.close()
-
+if __name__ == "__main__":
+    main()
