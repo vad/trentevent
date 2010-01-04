@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 
 import sys
-sys.path.append("icalendar-1.2-py2.5.egg")
+
+try:
+    from icalendar import Calendar, Event
+except:
+    sys.path.append("icalendar-1.2-py2.5.egg")
+    from icalendar import Calendar, Event
 
 from BeautifulSoup import BeautifulSoup
-#from dateutil import parser
-from icalendar import Calendar, Event
 from urllib import urlopen
 
 LOCATION = "Supercinema Rovereto"
