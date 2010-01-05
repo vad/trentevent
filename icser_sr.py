@@ -10,84 +10,88 @@ except:
 
 from BeautifulSoup import BeautifulSoup
 from urllib import urlopen
+from htmldecode import decode_htmlentities
+
 
 LOCATION = "Supercinema Rovereto"
 
-## DECODE HTML ENTITIES
-from htmlentitydefs import name2codepoint as n2cp
-import re
-
-def substitute_entity(match):
-    ent = match.group(2)
-    if match.group(1) == "#":
-        return unichr(int(ent))
-    else:
-        cp = n2cp.get(ent)
-
-        if cp:
-            return unichr(cp)
+class EventReader:
+    provider = ""
+    doc = None
+    location = ""
+    file_path = ""
+    url = ""
+    
+    def __init__(self, from_file=False):
+        if from_file:
+            f = open(self.file_path)
         else:
-            return match.group()
+            f = urlopen(self.url)
 
-def decode_htmlentities(string):
-    """    
-    >>> decode_htmlentities('&#38;')
-    u'&'
-    >>> decode_htmlentities('abc')
-    'abc'
-    """
-
-    entity_re = re.compile("&(#?)(\d{1,5}|\w{1,8});")
-    return entity_re.subn(substitute_entity, string)[0]
-
-## END DECODE HTML ENTITIES
-
-def get_events(doc):
-    from hashlib import md5
-    ap = doc.find('td', {"class": "main"}).findAll('p')
-
-    events = []
-    
-    year = 0
-    for p in ap:
-        p = decode_htmlentities(p.string).strip()
-        if not p: continue
-    
-        if not year:
-            year = p.split(' ')[-1]
-            continue
+        page = ''.join(f.readlines())
+        self.doc = BeautifulSoup(page)
+        f.close()
         
-        event = Event()
-    
-        try:
-            date = p.split(' ')[0].split('/')
-            desc = ' '.join(p.split(' ')[1:])
-            #event.add('dtstart', dateStart)
-            #event.add('dtstamp', dateStart) #maybe it's better to use NOW()
-            #event.add('dtend', dateEnd)
-            event.add('location', LOCATION)
-            event.add('dtstart;value=date', "%s%.2d%.2d" % (int(year),
-                int(date[1]),int(date[0])))
-            event.add('summary', desc)
+    #----------------------------------------------------------------------
+    def get_events(self):
+        """
+        virtual method
+        """
+        pass
             
-            #TODO: add other info like the date!!
-            md5text = desc
+        
+        
+########################################################################
+class SupercinemaRoveretoEventReader(EventReader):
+    """
+    Specialized for www.supercinemarovereto.it
+    >>> scr = SupercinemaRoveretoEventReader(True)
+    >>> len([e for e in scr.get_events()])
+    12
+    """
+    location = LOCATION
+    file_path = "rassegne.php"
+    url = "http://www.supercinemarovereto.it/rassegne.php"
+
+        
+    def get_events(self):
+        from hashlib import md5
+        ap = self.doc.find('td', {"class": "main"}).findAll('p')
+        
+        year = 0
+        for p in ap:
+            p = decode_htmlentities(p.string).strip()
+            if not p: continue
+        
+            if not year:
+                year = p.split(' ')[-1]
+                continue
             
-            event['uid'] = md5(md5text).hexdigest()+'@supercinemarovereto.it'
-            events.append(event)
-        except:
-            continue
-    return events
+            event = Event()
+        
+            try:
+                date = p.split(' ')[0].split('/')
+                desc = ' '.join(p.split(' ')[1:])
+                #event.add('dtstart', dateStart)
+                #event.add('dtstamp', dateStart) #maybe it's better to use NOW()
+                #event.add('dtend', dateEnd)
+                event.add('location', LOCATION)
+                event.add('dtstart;value=date', "%s%.2d%.2d" % (int(year),
+                    int(date[1]),int(date[0])))
+                event.add('summary', desc)
+                
+                #TODO: add other info like the date!!
+                md5text = desc
+                
+                event['uid'] = md5(md5text).hexdigest()+'@supercinemarovereto.it'
+                yield event
+            except:
+                continue
     
 
 def main():
-    f = urlopen("http://www.supercinemarovereto.it/rassegne.php")
-    #f = open("rassegne.php")
-    page = ''.join(f.readlines())
-    doc = BeautifulSoup(page)
-    f.close()
-    
-    events = get_events(doc)
+    scr = SupercinemaRoveretoEventReader(True)
+    events = scr.get_events()
     
     cal = Calendar()
     #cal.add('prodid', '-//My calendar product//mxm.dk//')
