@@ -50,7 +50,7 @@ class SupercinemaRoveretoEventReader(EventReader):
     12
     """
     location = LOCATION
-    file_path = "rassegne.php"
+    file_path = "test/data/rassegne.php"
     url = "http://www.supercinemarovereto.it/rassegne.php"
 
         
